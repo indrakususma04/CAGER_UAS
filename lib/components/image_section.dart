@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ImageSection extends StatelessWidget {
+  // ignore: use_super_parameters
   const ImageSection({Key? key, required this.image}) : super(key: key);
 
   final String image;

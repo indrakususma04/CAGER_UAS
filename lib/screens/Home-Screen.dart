@@ -1,16 +1,20 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
-import 'package:my_app/screens/routes/add_Product.dart';
-import 'package:my_app/screens/profile-screen.dart';
-import 'package:my_app/screens/routes/keranjang_Screen.dart';
-import 'package:my_app/screens/routes/news_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/cubit/auth/cubit/auth_cubit.dart';
+import 'package:my_app/screens/Profile-Screen.dart';
+import 'package:my_app/screens/routes/Produk/Produk_screen.dart';
+import 'package:my_app/screens/routes/admin/Booking.dart';
+import 'package:my_app/screens/routes/notification_screen.dart';
+import 'package:my_app/screens/routes/keranjang_screen.dart';
+import 'package:my_app/screens/routes/about_us/about_us.dart';
 import 'package:my_app/widgets/top_section';
-import 'package:my_app/screens/routes/notification_Screen.dart';
-import 'package:my_app/widgets/Carousel';
 import 'package:my_app/widgets/category_section';
-import 'package:my_app/screens/routes/Tenda_Screen.dart';
+import 'package:my_app/services/data_service.dart'; 
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -22,23 +26,62 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      if (_selectedIndex == 1) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => NotificationScreen()),
-        );
-      } else if (_selectedIndex == 3) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
-      } else if (_selectedIndex == 2) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => KeranjangScreen()),
-        );
+      switch (_selectedIndex) {
+        case 1:
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => NotificationScreen()),
+          );
+          break;
+        case 2:
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => KeranjangScreen()),
+          );
+          break;
+        case 3:
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          );
+          break;
       }
     });
+  }
+
+  void _performSearch() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProductScreen(category: ''),
+      ),
+    );
+  }
+
+  void _navigateToProductCategory(String category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductScreen(category: category),
+      ),
+    );
+  }
+
+  Future<void> _logout() async {
+    final response = await DataService.logoutData();
+
+    if (response.statusCode == 200) {
+      // ignore: use_build_context_synchronously
+      context.read<AuthCubit>().Logout();
+      // ignore: use_build_context_synchronously
+      Navigator.of(context).pushReplacementNamed('/login-screen');
+    } else {
+      // Handle logout error
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logout failed. Please try again.')),
+      );
+    }
   }
 
   @override
@@ -46,64 +89,57 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('HOME'),
+        backgroundColor: Colors.blueAccent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: _performSearch,
+          ),
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: _logout,
+          ),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: <Widget>[
-            const UserAccountsDrawerHeader(
-              accountName: Text('user'),
-              accountEmail: null,
-              currentAccountPicture: CircleAvatar(
-                backgroundImage: AssetImage('assets/images/profile.jpeg'), 
+            Container(
+              height: 80,
+              color: Colors.blueAccent,
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.home,
+                size: 40,
+                color: Colors.white,
               ),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
             ),
             ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text(' Latihan|Crud Sqlite'),
+              leading: const Icon(Icons.trolley, color: Colors.blueAccent),
+              title: const Text('Status Pesanan'),
               onTap: () {
                 Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const ProductPage(),
+                  builder: (context) => BookingsScreen(),
                 ));
               },
             ),
             ListTile(
-              leading: const Icon(Icons.router),
-              title: const Text('latihan|API'),
+              leading: const Icon(Icons.person, color: Colors.blueAccent),
+              title: const Text('About Us'),
               onTap: () {
                 Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const NewsScreen(),
+                  builder: (context) => const AboutUsScreen(),
                 ));
               },
             ),
             ListTile(
-              leading: const Icon(Icons.room_service),
-              title: const Text('Help'),
+              leading: const Icon(Icons.exit_to_app, color: Colors.blueAccent),
+              title: const Text('Logout'),
               onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const NewsScreen(),
-                ));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shop),
-              title: const Text('Bukalapak'),
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const NewsScreen(),
-                ));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.help_center),
-              title: const Text('aboutus'),
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const NewsScreen(),
-                ));
+                Navigator.of(context).pop(); 
+                _logout();
               },
             ),
           ],
@@ -112,8 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.black,
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -141,23 +179,34 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   CategorySection(
-                    titles: ['TENDA', 'ALAT MASAK', 'ALAT TIDUR','GUIDE'],
-                    icons: [Icons.home, Icons.fire_extinguisher, Icons.bed,Icons.person],
+                    titles: const ['TENDA', 'ALAT MASAK', 'ALAT TIDUR', 'OTHER'],
+                    // ignore: prefer_const_literals_to_create_immutables
+                    icons: [
+                      Icons.home,
+                      Icons.fire_extinguisher,
+                      Icons.bed,
+                      Icons.devices_other
+                    ],
                     onSelectionChanged: (index) {
-                      if (index == 0) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => TendaScreen()),
-                        );
+                      switch (index) {
+                        case 0:
+                          _navigateToProductCategory('TENDA');
+                          break;
+                        case 1:
+                          _navigateToProductCategory('ALAT MASAK');
+                          break;
+                        case 2:
+                          _navigateToProductCategory('ALAT TIDUR');
+                          break;
+                        case 3:
+                          _navigateToProductCategory('OTHER');
+                          break;
                       }
                     },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 50), 
-            CarouselContainer(),
-            const SizedBox(height: 80), 
           ],
         ),
       ),

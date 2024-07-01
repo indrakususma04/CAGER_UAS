@@ -1,5 +1,16 @@
+// ignore_for_file: file_names, depend_on_referenced_packages, use_key_in_widget_constructors, library_private_types_in_public_api, unused_element, use_build_context_synchronously, prefer_const_constructors
+
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
+import 'package:my_app/cubit/auth/cubit/cart/bloc/cubit/cart_cubit.dart';
+import 'package:my_app/dto/Produk.dart';
+import 'package:my_app/endpoints/endpoints.dart';
 import 'package:my_app/screens/routes/Chekout_Screen.dart';
+import 'package:my_app/utils/constants.dart';
+import 'package:my_app/utils/secure_storage_util.dart';
+
 
 class KeranjangScreen extends StatefulWidget {
   @override
@@ -7,7 +18,34 @@ class KeranjangScreen extends StatefulWidget {
 }
 
 class _KeranjangScreenState extends State<KeranjangScreen> {
-  List<bool> _isCheckedList = List.generate(4, (index) => false); // Daftar untuk menyimpan status ceklis setiap item
+  static Future<void> addRental(String idProduk, double totalHarga, BuildContext context) async {
+    final url = Uri.parse(Endpoints.Rental);
+    final String? accessToken = await SecureStorageUtil.storage.read(key: tokenStoreName);
+
+    final data = {
+      'id_produk': idProduk,
+      'status': 'proses', // Assuming 'proses' is the status
+      'total_harga': totalHarga.toString(), // Mengubah double ke String
+    };
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(data),
+    );
+    if (response.statusCode == 201) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking berhasil')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal melakukan booking')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,95 +55,87 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      body: Column(
         children: [
-          _buildProductContainer(
-            index: 0,
-            sellerName: 'Penjual: indra rental shop',
-            productName: 'tenda dome 4 orang merk eiger 2 layer',
-            productPrice: 'Rp 100.000',
-            productImage: 'assets/images/tendanew.jpeg',
-          ),
-          _buildProductContainer(
-            index: 1,
-            sellerName: 'Penjual: Seller Cager singaraja',
-            productName: 'Kompor portable merk rinnai 1 tungkku',
-            productPrice: 'Rp 150.000',
-            productImage: 'assets/images/kompor.jpeg',
-          ),
-          _buildProductContainer(
-            index: 2,
-            sellerName: 'Penjual: Seller ndrshop camp',
-            productName: 'tenda anak anak 2 orang',
-            productPrice: 'Rp 150.000',
-            productImage: 'assets/images/tenda.jpeg',
-          ),
-          _buildProductContainer(
-            index: 3,
-            sellerName: 'Penjual: Seller Cager singaraja',
-            productName: 'Kompor portable merk rinnai 1 tungkku',
-            productPrice: 'Rp 150.000',
-            productImage: 'assets/images/kompor.jpeg',
+          Expanded(
+            child: BlocBuilder<CartCubit, List<Produk>>(
+              builder: (context, cart) {
+                if (cart.isNotEmpty) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    itemCount: cart.length,
+                    itemBuilder: (context, index) {
+                      final produk = cart[index];
+                      return _buildProductContainer(context, produk);
+                    },
+                  );
+                } else {
+                  return Center(child: Text('Keranjang Kosong'));
+                }
+              },
+            ),
           ),
         ],
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 2,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-            color: Colors.white,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total Pesanan: Rp 250.000',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+      bottomNavigationBar: BlocBuilder<CartCubit, List<Produk>>(
+        builder: (context, cart) {
+          if (cart.isNotEmpty) {
+            final cartCubit = context.read<CartCubit>();
+            final totalPrice = cartCubit.getTotalPrice();
+
+            return BottomAppBar(
+              child: Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.5),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                  color: Colors.white,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Pesanan: Rp ${totalPrice.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CheckoutScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        disabledBackgroundColor: Colors.white,
+                      ),
+                      child: const Text('BOOKING'),
+                    ),
+                  ],
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CheckoutScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.blue, backgroundColor: Colors.white, // Warna teks biru
-                ),
-                child: const Text(
-                  'Checkout',
-                  style: TextStyle(
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+            );
+          } else {
+            return SizedBox.shrink();
+          }
+        },
       ),
     );
   }
 
-  Widget _buildProductContainer({
-    required int index,
-    required String sellerName,
-    required String productName,
-    required String productPrice,
-    required String productImage,
-  }) {
+  Widget _buildProductContainer(BuildContext context, Produk produk) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(10),
@@ -127,41 +157,38 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
           Row(
             children: [
               Checkbox(
-                value: _isCheckedList[index], // Menggunakan nilai ceklis dari daftar
+                value: true,
                 onChanged: (isChecked) {
-                  setState(() {
-                    _isCheckedList[index] = isChecked!; // Mengubah status ceklis sesuai dengan tindakan pengguna
-                  });
+                  // Handle checkbox state change if needed
                 },
                 activeColor: Colors.blue,
-              ),
-              Text(
-                sellerName,
-                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ),
           ListTile(
-            leading: CircleAvatar(
-              backgroundImage: AssetImage(productImage),
-            ),
-            title: Text(productName),
-            subtitle: Text('Harga Sewa: $productPrice'),
+            title: Text(produk.namaProduk),
+            subtitle: Text('Harga Sewa: Rp ${produk.harga}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   icon: const Icon(Icons.remove),
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<CartCubit>().removeProduct(produk.idProduk);
+                  },
                 ),
-                const Text('1'), // Jumlah qty produk
+                Text('1'), 
                 IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<CartCubit>().addProduct(produk);
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<CartCubit>().removeProduct(produk.idProduk);
+                  },
                 ),
               ],
             ),

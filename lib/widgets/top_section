@@ -11,69 +11,42 @@ class TopSection extends StatelessWidget {
           color: Colors.blue,
         ),
         Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: 20,
-            ),
+            SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.all(15),
-              child: Row(
-                children: [
-                  ClipOval(
-                    child: Container(
-                      color: Colors.white,
-                      child: Image.asset(
-                        'assets/images/profile.jpeg', 
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  'CAMP AND GEAR RENTAL',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  SizedBox(width: 10),
-                  Text(
-                    'Selamat datang di CAGER user!',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            Container(
-              height: 50,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(width: 10),
-                  Icon(Icons.search),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      cursorHeight: 20,
-                      autofocus: false,
-                      decoration: InputDecoration(
-                        hintText: "cari peralatan camping disini !",
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Kategori',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              child: Container(
+                height: 50,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Center(
+                  child: Text(
+                    'Kategori',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),

@@ -4,6 +4,7 @@ class TextContainer extends StatelessWidget {
   final String text;
   final Color color;
 
+  // ignore: use_super_parameters
   const TextContainer({
     required this.text,
     required this.color,

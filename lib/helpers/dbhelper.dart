@@ -1,107 +1,75 @@
 import 'package:sqflite/sqflite.dart';
 // ignore: depend_on_referenced_packages
-import 'package:path/path.dart' as path;
-import 'dart:async';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:my_app/models/Product.dart';
+import 'package:path/path.dart';
+import 'package:my_app/dto/Produk.dart';
 
-class DbHelper {
-  static DbHelper? _dbHelper;
+class DatabaseHelper {
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
-  // Konstruktor pribadi untuk mengontrol pembuatan objek
-  DbHelper._createObject();
-
-  // Factory constructor untuk mendapatkan instance tunggal DbHelper
-  factory DbHelper() {
-    _dbHelper ??= DbHelper._createObject();
-    return _dbHelper!;
+  factory DatabaseHelper() {
+    return _instance;
   }
 
-  // Metode untuk mengakses atau membuat database
+  DatabaseHelper._internal();
+
   Future<Database> get database async {
-    _database ??= await _initDatabase();
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
     return _database!;
   }
 
-  // Metode untuk inisialisasi database
   Future<Database> _initDatabase() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String dbPath = path.join(documentsDirectory.path, 'Cager.db');
-    return await openDatabase(dbPath, version: 1, onCreate: _createDb);
-  }
-
-  // Metode untuk membuat tabel produk jika tidak ada
-  Future<void> _createDb(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nama TEXT,
-        stok INTEGER,
-        harga INTEGER
-      )
-    ''');
-  }
-
-  // Metode untuk menambahkan produk ke database
-  Future<int> insertProduct(Product product) async {
-    final db = await database;
-    // Memeriksa apakah produk sudah ada berdasarkan nama
-    final List<Map<String, dynamic>> existingProduct = await db.query(
-      'products',
-      where: 'nama = ?',
-      whereArgs: [product.nama],
+    String path = join(await getDatabasesPath(), 'cartcager.db');
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _onCreate,
     );
-    if (existingProduct.isNotEmpty) {
-      throw Exception('Product with name "${product.nama}" already exists.');
-    }
-
-    // Menetapkan ID produk secara manual
-    int nextId = await _getNextProductId(db);
-
-    // Memasukkan produk dengan ID yang ditetapkan secara manual
-    product.id = nextId;
-    return await db.insert('products', product.toMap());
   }
 
-  // Metode untuk mendapatkan ID berikutnya untuk produk
-  Future<int> _getNextProductId(Database db) async {
-    // Mendapatkan ID terbesar dari produk yang sudah ada di database
-    final List<Map<String, dynamic>> result = await db.rawQuery('''
-      SELECT MAX(id) AS max_id FROM products
-    ''');
-    int maxId = (result.first['max_id'] ?? 0) as int;
-    return maxId + 1;
+  Future<void> _onCreate(Database db, int version) async {
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS keranjang(id_produk INTEGER PRIMARY KEY, id_kategori_produk INTEGER, nama_produk TEXT, harga TEXT, stok INTEGER, deskripsi TEXT, gambar_url TEXT, quantity INTEGER, userId TEXT)',
+    );
   }
 
-  // Metode untuk mendapatkan semua produk dari database
-  Future<List<Product>> getProducts() async {
+  Future<void> insertProduct(Produk produk, String userId) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('products');
+    await db.insert(
+      'keranjang',
+      {...produk.toJson(), 'userId': userId},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Produk>> getProducts(String userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'keranjang',
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
     return List.generate(maps.length, (i) {
-      return Product.fromMap(maps[i]);
+      return Produk.fromJson(maps[i]);
     });
   }
 
-  // Metode untuk memperbarui produk di database
-  Future<int> updateProduct(Product product) async {
+  Future<void> deleteProduct(int idProduk, String userId) async {
     final db = await database;
-    return await db.update(
-      'products',
-      product.toMap(),
-      where: 'id = ?',
-      whereArgs: [product.id],
+    await db.delete(
+      'keranjang',
+      where: 'id_produk = ? AND userId = ?',
+      whereArgs: [idProduk, userId],
     );
   }
 
-  // Metode untuk menghapus produk dari database
-  Future<int> deleteProduct(int id) async {
+  Future<void> clearCart(String userId) async {
     final db = await database;
-    return await db.delete(
-      'products',
-      where: 'id = ?',
-      whereArgs: [id],
+    await db.delete(
+      'keranjang',
+      where: 'userId = ?',
+      whereArgs: [userId],
     );
   }
 }

@@ -6,6 +6,7 @@ class AssetImageWidget extends StatelessWidget {
   final double? height;
   final BoxFit? fit;
 
+  // ignore: use_super_parameters
   const AssetImageWidget({
     Key? key,
     required this.imagePath,
